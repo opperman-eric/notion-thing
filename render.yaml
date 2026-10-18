@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: spoken-minutes
+    runtime: node
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: NOTION_TOKEN
+        sync: false
+      - key: NOTION_PROJECTS_DATABASE_ID
+        sync: false
+      - key: APP_PASSWORD
+        sync: false
+      - key: TIME_ZONE
+        value: Pacific/Auckland
