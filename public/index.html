@@ -3,55 +3,44 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#163c32">
+  <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Minutes">
   <meta name="description" content="Turn a quick voice note into time logged in Notion.">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/style.css">
   <title>Spoken Minutes</title>
   <script src="/app.js" defer></script>
 </head>
 <body>
   <main>
-    <header><a class="brand" href="/" aria-label="Spoken Minutes home"><span class="brand-icon">m</span> spoken minutes<span class="brand-dot">.</span></a><button id="logout" class="text-button" hidden>Sign out</button></header>
+    <header><h1>Time entry</h1><button id="logout" class="text-button" hidden>Sign out</button></header>
     <section id="login-panel" class="panel login">
-      <p class="eyebrow">YOUR TIME, ACCOUNTED FOR</p>
-      <h1>A little less admin.<br>A little more done.</h1>
-      <p class="muted">Speak your work. Save your minutes to Notion.</p>
-      <form id="login-form"><label for="password">App password</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" id="login-button">Unlock my notebook <span>↗</span></button></form>
-      <p class="footnote">Your private space for keeping track.</p>
+      <form id="login-form"><label for="password">App password</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" id="login-button">Sign in</button></form>
     </section>
     <div id="workspace" hidden>
-      <section class="intro"><p class="eyebrow">LESS TYPING. MORE DOING.</p><h1>Make your<br>minutes count.</h1><p class="muted">A quick voice note. A little time, logged.</p></section>
       <section class="panel recorder-panel" aria-label="Voice recorder">
-        <div class="panel-top"><span class="eyebrow">YOUR NEXT TIME ENTRY</span><span class="pill" id="record-state">Ready when you are</span></div>
+        <p id="record-state" role="status">Ready</p>
         <button id="record" class="record-button" aria-label="Start recording" disabled><svg id="mic-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="11" y="3" width="10" height="17" rx="5"/><path d="M6 14v2a10 10 0 0 0 20 0v-2M16 26v5M10 31h12"/></svg><span id="stop-icon" hidden></span></button>
         <h2 id="record-title">Tap to record</h2><p id="record-help" class="muted">Say the project, what you did, and how long.</p>
         <p id="timer" hidden>00:00</p>
-        <blockquote>“I spent 16 minutes emailing<br>stakeholders on Project B.”</blockquote>
-        <div class="divider"><span>or write it down</span></div>
-        <form id="text-form"><label class="sr-only" for="typed-note">Describe your time entry</label><textarea id="typed-note" rows="2" maxlength="5000" placeholder="I spent 16 minutes emailing stakeholders on Project B…"></textarea><button class="secondary" id="interpret">Prepare entry <span>↗</span></button></form>
+        <form id="text-form"><label for="typed-note">Or type a time entry</label><textarea id="typed-note" rows="2" maxlength="5000" placeholder="I spent 16 minutes emailing stakeholders on Project B…"></textarea><button class="secondary" id="interpret">Prepare entry</button></form>
         <p class="footnote">Audio goes to OpenAI for transcription.<br>You review every entry before it goes to Notion.</p>
       </section>
       <section id="review" class="panel review" hidden aria-labelledby="review-title">
-        <p class="eyebrow">ONE LAST LOOK</p><h2 id="review-title">Sound about right?</h2>
-        <p class="muted">Check the details, then send them to Notion.</p>
+        <h2 id="review-title">Review entry</h2>
         <details id="transcript-box"><summary>Your voice note</summary><p id="transcript"></p></details>
         <form id="entry-form">
           <label for="project">Project</label><select id="project" required><option value="">Choose a project</option></select>
           <label for="task">Task name</label><input id="task" maxlength="200" placeholder="Email stakeholders" required>
           <div class="field-row"><div><label for="minutes">Minutes</label><input id="minutes" type="number" min="0.01" max="1440" step="any" inputmode="decimal" required></div><div><label for="date">Date</label><input id="date" type="date" required></div></div>
-          <button class="primary" id="save">Save to Notion <span>↗</span></button>
+          <button class="primary" id="save">Save to Notion</button>
         </form><button class="text-button discard" id="discard">Discard entry</button>
       </section>
-      <section id="success" class="panel success" hidden><span class="success-check">✓</span><p class="eyebrow">TIME WELL RECORDED</p><h2>That’s in the books.</h2><p id="saved-summary" class="muted"></p><a id="notion-link" target="_blank" rel="noopener noreferrer">View in Notion ↗</a><button id="another" class="primary">Log another moment <span>+</span></button></section>
-      <div class="bottom-note"><span>01 &nbsp; Speak</span><span>02 &nbsp; Review</span><span>03 &nbsp; Carry on</span></div>
+      <section id="success" class="panel success" hidden><h2>Saved to Notion</h2><p id="saved-summary" class="muted"></p><a id="notion-link" target="_blank" rel="noopener noreferrer">View in Notion</a><button id="another" class="primary">New entry</button></section>
     </div>
     <p id="message" role="status" aria-live="polite" hidden></p>
     <button id="retry-projects" class="secondary" hidden>Reload projects</button>
-    <footer>A small habit. A clearer day.<span>CONNECTED TO NOTION</span></footer>
   </main>
 </body>
 </html>

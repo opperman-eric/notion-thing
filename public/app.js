@@ -18,7 +18,7 @@ function busy(value) {
   processing = value;
   for (const id of ['record', 'interpret', 'save', 'discard', 'another', 'logout']) $(id).disabled = value;
   $('typed-note').disabled = value;
-  $('record-state').textContent = value ? 'Working on it…' : 'Ready when you are';
+  $('record-state').textContent = value ? 'Working on it…' : 'Ready';
 }
 async function loadProjects() {
   $('retry-projects').hidden = true;
@@ -77,7 +77,7 @@ async function startRecording() {
     recorder.onerror = () => { failed = true; message('Recording was interrupted. Please try again.'); finishRecording(); stopTracks(); };
     recorder.onstop = async () => {
       clearInterval(timer); stopTracks(); $('timer').hidden = true; $('record').classList.remove('recording');
-      $('record').setAttribute('aria-label', 'Start recording'); $('record-title').textContent = 'Preparing your entry…'; $('record-state').textContent = 'Ready when you are';
+      $('record').setAttribute('aria-label', 'Start recording'); $('record-title').textContent = 'Preparing your entry…'; $('record-state').textContent = 'Ready';
       $('interpret').disabled = false; $('logout').disabled = false;
       if (failed) { $('record-title').textContent = 'Tap to record'; return; }
       const blob = new Blob(chunks, { type: recorder.mimeType || mime || 'audio/mp4' });
