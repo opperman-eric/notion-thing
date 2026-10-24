@@ -5,13 +5,16 @@ import { fileURLToPath } from 'node:url';
 import { createNotion, AppError } from './lib/notion.js';
 import { createAI, today } from './lib/ai.js';
 import { createSessions, SESSION_SECONDS } from './lib/session.js';
+import { createShortcuts } from './lib/shortcuts.js';
 
 const digest = value => createHash('sha256').update(value).digest();
 export function createApp(env = process.env, fetcher = fetch) {
   const notion = createNotion(env, fetcher), ai = createAI(env, fetcher);
+  const shortcuts = createShortcuts(env, notion, ai);
   const sessions = createSessions(env), attempts = new Map(), saves = new Map(), busy = new Set();
   const assets = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/manifest.webmanifest': ['manifest.webmanifest', 'application/manifest+json'], '/icon.svg': ['icon.svg', 'image/svg+xml'] };
   const cleanup = setInterval(() => {
+    shortcuts.cleanup();
     for (const [key, value] of attempts) if (value.until < Date.now()) attempts.delete(key);
   }, 60000);
   cleanup.unref();
@@ -36,12 +39,20 @@ export function createApp(env = process.env, fetcher = fetch) {
         res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8` }); return res.end(body);
       }
       if (!path.startsWith('/api/')) return send(404, { error: 'Not found.' });
-      if (!env.APP_PASSWORD || env.APP_PASSWORD.length < 12) throw new AppError('Set APP_PASSWORD to at least 12 characters on the server.', 503);
-      sessions.checkConfiguration();
       if (req.method !== 'GET' && req.headers.origin) {
         const origin = new URL(req.headers.origin);
         if (origin.host !== req.headers.host) throw new AppError('Invalid request origin.', 403);
       }
+      // Shortcuts uses a separate bearer token, never the browser's password or cookie.
+      if (path.startsWith('/api/shortcuts/')) {
+        shortcuts.authenticate(req.headers.authorization);
+        if (req.method !== 'POST') throw new AppError('Use POST for Siri requests.', 405);
+        if (path === '/api/shortcuts/prepare') return send(200, await shortcuts.prepare(await json()));
+        if (path === '/api/shortcuts/save') return send(200, await shortcuts.save(await json()));
+        return send(404, { ok: false, error: 'Not found.', message: 'Not found.' });
+      }
+      if (!env.APP_PASSWORD || env.APP_PASSWORD.length < 12) throw new AppError('Set APP_PASSWORD to at least 12 characters on the server.', 503);
+      sessions.checkConfiguration();
       if (path === '/api/login' && req.method === 'POST') {
         // Use the connection IP: proxy headers can be forged. Conservative shared limit on Render.
         const ip = req.socket.remoteAddress;
@@ -93,7 +104,10 @@ export function createApp(env = process.env, fetcher = fetch) {
       }
       return send(404, { error: 'Not found.' });
     } catch (error) {
-      if (!res.headersSent) send(error.status || 500, { error: error instanceof AppError ? error.message : 'Something went wrong. Check your server configuration and try again.' });
+      if (!res.headersSent) {
+        const message = error instanceof AppError ? error.message : 'Something went wrong. Check your server configuration and try again.';
+        send(error.status || 500, { ok: false, error: message, message });
+      }
     }
   });
   server.on('close', () => clearInterval(cleanup));

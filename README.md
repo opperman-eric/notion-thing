@@ -2,6 +2,8 @@
 
 A private, iPhone-friendly JavaScript app for logging time in Notion by voice.
 
+For **“Siri, log time”**, see the [iPhone Shortcut setup guide](docs/siri-shortcut.md). It uses Apple dictation, a separate `SHORTCUT_TOKEN`, a spoken review, and an explicit Save/Cancel step. OpenAI and Notion keys stay on Render.
+
 Tap record, say “I spent 16 minutes emailing stakeholders on Project B”, stop, review the details, and save. The app creates a **new time entry**, rather than changing an existing task’s minutes. You can also type a note. Audio is held in memory, sent to OpenAI, and discarded after processing; the app does not store recordings on disk. There is no offline mode.
 
 ## Notion setup
@@ -80,7 +82,7 @@ There are no third-party runtime dependencies or build step. Tests use mocked AP
 ## Behavior and limits
 
 - Recordings stop at two minutes, on leaving the page, or at the size limit (12 MB). iPhone MP4 and browser WebM recordings are supported.
-- Missing or uncertain fields stay blank for manual selection. Nothing is written until you press Save to Notion.
+- Missing or uncertain fields stay blank for manual selection in the website. Siri refuses incomplete drafts. Nothing is written until you press Save to Notion or confirm Save in the shortcut.
 - Database membership and destination property types are checked on the server before writing.
 - A save identifier prevents duplicate submissions **within a running server process**. Successful retries return the original result. If a write times out, check Notion before starting a new entry: Notion does not provide an atomic idempotency key for this operation.
 - Sign-in lasts 30 days from login using an HttpOnly, signed cookie. It survives server restarts and deployments when `SESSION_SECRET` and `APP_PASSWORD` stay unchanged. Clearing browser data, signing out, or the cookie expiring requires another login. Passkeys have not been added yet.
