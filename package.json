@@ -7,6 +7,6 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
     "test": "node --test",
-    "check": "node --check server.js && node --check lib/notion.js && node --check lib/ai.js && node --check public/app.js"
+    "check": "node --check server.js && node --check lib/notion.js && node --check lib/ai.js && node --check lib/session.js && node --check public/app.js"
   }
 }

@@ -16,5 +16,7 @@ services:
         sync: false
       - key: APP_PASSWORD
         sync: false
+      - key: SESSION_SECRET
+        generateValue: true
       - key: TIME_ZONE
         value: Pacific/Auckland

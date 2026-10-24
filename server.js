@@ -1,17 +1,17 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createNotion, AppError } from './lib/notion.js';
 import { createAI, today } from './lib/ai.js';
+import { createSessions, SESSION_SECONDS } from './lib/session.js';
 
 const digest = value => createHash('sha256').update(value).digest();
 export function createApp(env = process.env, fetcher = fetch) {
   const notion = createNotion(env, fetcher), ai = createAI(env, fetcher);
-  const sessions = new Map(), attempts = new Map(), saves = new Map(), busy = new Set();
+  const sessions = createSessions(env), attempts = new Map(), saves = new Map(), busy = new Set();
   const assets = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/manifest.webmanifest': ['manifest.webmanifest', 'application/manifest+json'], '/icon.svg': ['icon.svg', 'image/svg+xml'] };
   const cleanup = setInterval(() => {
-    for (const [key, expiry] of sessions) if (expiry < Date.now()) sessions.delete(key);
     for (const [key, value] of attempts) if (value.until < Date.now()) attempts.delete(key);
   }, 60000);
   cleanup.unref();
@@ -37,6 +37,7 @@ export function createApp(env = process.env, fetcher = fetch) {
       }
       if (!path.startsWith('/api/')) return send(404, { error: 'Not found.' });
       if (!env.APP_PASSWORD || env.APP_PASSWORD.length < 12) throw new AppError('Set APP_PASSWORD to at least 12 characters on the server.', 503);
+      sessions.checkConfiguration();
       if (req.method !== 'GET' && req.headers.origin) {
         const origin = new URL(req.headers.origin);
         if (origin.host !== req.headers.host) throw new AppError('Invalid request origin.', 403);
@@ -50,15 +51,14 @@ export function createApp(env = process.env, fetcher = fetch) {
         attempts.set(ip, attempt);
         const body = await json();
         if (typeof body.password !== 'string' || !timingSafeEqual(digest(body.password), digest(env.APP_PASSWORD))) throw new AppError('Incorrect password.', 401);
-        const token = randomBytes(32).toString('hex');
-        sessions.set(token, Date.now() + 7 * 86400000);
+        const token = sessions.issue();
         const secure = env.NODE_ENV === 'production' || !!env.RENDER;
-        res.setHeader('Set-Cookie', `session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800${secure ? '; Secure' : ''}`);
+        res.setHeader('Set-Cookie', `session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_SECONDS}${secure ? '; Secure' : ''}`);
         return send(200, { ok: true });
       }
       const token = req.headers.cookie?.split(';').map(v => v.trim()).find(v => v.startsWith('session='))?.slice(8);
-      if (!token || (sessions.get(token) || 0) < Date.now()) throw new AppError('Sign in to continue.', 401);
-      if (path === '/api/logout' && req.method === 'POST') { sessions.delete(token); res.setHeader('Set-Cookie', 'session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); return send(200, { ok: true }); }
+      if (!sessions.valid(token)) throw new AppError('Sign in to continue.', 401);
+      if (path === '/api/logout' && req.method === 'POST') { res.setHeader('Set-Cookie', `session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${env.NODE_ENV === 'production' || env.RENDER ? '; Secure' : ''}`); return send(200, { ok: true }); }
       if (path === '/api/projects' && req.method === 'GET') return send(200, { projects: await notion.projects(), today: today(env.TIME_ZONE) });
       if (path === '/api/draft' && req.method === 'POST') {
         if (busy.has(token)) throw new AppError('A recording is already being processed.', 429);

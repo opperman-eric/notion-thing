@@ -10,7 +10,7 @@ const projectsDb = '22222222-2222-2222-2222-222222222222';
 const timeDb = '33333333-3333-3333-3333-333333333333';
 const projectSource = '44444444-4444-4444-4444-444444444444';
 const timeSource = '55555555-5555-5555-5555-555555555555';
-const env = { APP_PASSWORD: 'a-test-password-for-tests', NOTION_TOKEN: 'fake-notion', NOTION_PROJECTS_DATABASE_ID: projectsDb, OPENAI_API_KEY: 'fake-openai' };
+const env = { APP_PASSWORD: 'a-test-password-for-tests', SESSION_SECRET: 'test-only-session-secret-at-least-32-characters', NOTION_TOKEN: 'fake-notion', NOTION_PROJECTS_DATABASE_ID: projectsDb, OPENAI_API_KEY: 'fake-openai' };
 const entry = { projectId, task: 'Email stakeholders', minutes: 16, date: '2026-10-18' };
 const compact = id => id.replaceAll('-', '');
 function notionMock({ badSchema = false, failCreate = false } = {}) {
