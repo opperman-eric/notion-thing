@@ -61,7 +61,7 @@ Open **Shortcuts**, tap **+**, and name it **Log time**. Add the following actio
     | Header: `Content-Type` | `application/json` |
     | Request Body | `JSON` |
     | JSON field `draftId` | Type **Text**, value `[DraftID]` |
-    | JSON field `confirmed` | Type **Boolean**, value **true / Yes** |
+    | JSON field `confirmed` | Type **Text**, value `true` (lowercase, typed as plain text) |
 
 14. Still inside Save, add **Get Dictionary Value**: key `message`, in the result of the save request, then **Speak Text** using that value. Do not hard-code “Saved”: the returned message reports success or an error.
 15. **Inside Cancel**, add **Speak Text**: `Cancelled. Nothing saved.`
@@ -122,6 +122,6 @@ Both routes accept only `POST` with `Content-Type: application/json` and `Author
 
 An incomplete entry returns `{"ok":true,"canSave":false,"message":"..."}` without a draft ID.
 
-`/api/shortcuts/save` accepts `{"draftId":"server-generated-uuid","confirmed":true}`. A successful save returns `{"ok":true,"id":"notion-page-id","url":"https://...","message":"Saved. ..."}`.
+`/api/shortcuts/save` accepts `{"draftId":"server-generated-uuid","confirmed":"true"}`. Boolean `true` is also accepted. False, the text `false`, and missing confirmation are rejected. Using Text avoids iOS versions whose Boolean editor does not retain the selection. A successful save returns `{"ok":true,"id":"notion-page-id","url":"https://...","message":"Saved. ..."}`.
 
 Failures return an appropriate non-2xx status with `{"ok":false,"error":"...","message":"..."}`. A network or HTTP error may cause Shortcuts to stop before the readback. This must not be treated as success. Draft creation is limited to 30 requests per ten minutes per server, with one preparation at a time.

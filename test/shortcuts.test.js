@@ -49,7 +49,9 @@ test('preparing never writes; confirmation saves the server draft once', async (
   const draft = await api.prepare({ transcript: '16 minutes emailing stakeholders on Project B' });
   assert.equal(draft.canSave, true); assert.match(draft.message, /16 minutes on Project B/); assert.match(draft.message, /2026-10-25/);
   assert.equal(writes.length, 0);
-  await assert.rejects(api.save({ draftId: draft.draftId, confirmed: 'true' }), /not confirmed/);
+  for (const confirmed of [false, 'false', '', undefined, null, 1, 'yes', 'TRUE']) {
+    await assert.rejects(api.save({ draftId: draft.draftId, confirmed }), /not confirmed/);
+  }
   assert.equal(writes.length, 0);
   const saved = await api.save({ draftId: draft.draftId, confirmed: true, entry: { ...entry, minutes: 999 } });
   assert.equal(saved.ok, true); assert.deepEqual(writes, [entry]);
@@ -121,7 +123,7 @@ test('HTTP Siri endpoints work without browser cookies and cannot access browser
   const prepared = await call('/api/shortcuts/prepare', { transcript: '16 minutes emailing stakeholders on Project B' });
   assert.equal(prepared.status, 200); const draft = await prepared.json();
   assert.equal(draft.canSave, true); assert.equal(writes.length, 0);
-  const saved = await call('/api/shortcuts/save', { draftId: draft.draftId, confirmed: true });
+  const saved = await call('/api/shortcuts/save', { draftId: draft.draftId, confirmed: 'true' });
   assert.equal(saved.status, 200); assert.equal((await saved.json()).ok, true); assert.equal(writes.length, 1);
   assert.equal((await call('/api/shortcuts/save', { draftId: draft.draftId, confirmed: true })).status, 200);
   assert.equal(writes.length, 1);
