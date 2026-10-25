@@ -25,6 +25,25 @@ test('Siri only accepts its own bearer token and fails closed when unconfigured'
   for (const value of [undefined, token, 'Bearer wrong', 'Basic abc']) assert.throws(() => api.authenticate(value), /authentication failed/);
   assert.throws(() => createShortcuts({}, {}, {}).authenticate(`Bearer ${token}`), /not configured/);
 });
+test('Siri tolerates surrounding whitespace but explains header mistakes without exposing tokens', () => {
+  const api = createShortcuts({ SHORTCUT_TOKEN: ` ${token}\n` }, {}, {});
+  assert.doesNotThrow(() => api.authenticate(` bearer  ${token} `));
+  const cases = [
+    [undefined, /No Authorization header/],
+    [`Bearer, ${token}`, /must start with Bearer/],
+    ['Bearer ShortcutToken', /received 13 token characters/],
+    [`Bearer "${token}"`, /quotation marks/],
+    [`Bearer ${token.slice(0, 10)} ${token.slice(10)}`, /space or line break/],
+    [`Bearer ${'x'.repeat(token.length)}`, /length matches, but its value differs/]
+  ];
+  for (const [value, detail] of cases) {
+    assert.throws(() => api.authenticate(value), error => {
+      assert.equal(error.status, 401); assert.match(error.message, detail);
+      assert.equal(error.message.includes(token), false);
+      return true;
+    });
+  }
+});
 test('preparing never writes; confirmation saves the server draft once', async () => {
   const { api, writes } = fixture();
   const draft = await api.prepare({ transcript: '16 minutes emailing stakeholders on Project B' });
@@ -94,7 +113,11 @@ test('HTTP Siri endpoints work without browser cookies and cannot access browser
   t.after(() => new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }));
   const base = `http://127.0.0.1:${server.address().port}`;
   const call = (path, body, authorization = `Bearer ${token}`) => fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: authorization }, body: JSON.stringify(body) });
-  assert.equal((await call('/api/shortcuts/prepare', { transcript: 'test' }, 'Bearer wrong')).status, 401);
+  const badAuth = await call('/api/shortcuts/prepare', { transcript: 'test' }, 'Bearer wrong');
+  assert.equal(badAuth.status, 401);
+  const authMessage = await badAuth.json();
+  assert.match(authMessage.message, /received 5 token characters/);
+  assert.equal(authMessage.message.includes(token), false);
   const prepared = await call('/api/shortcuts/prepare', { transcript: '16 minutes emailing stakeholders on Project B' });
   assert.equal(prepared.status, 200); const draft = await prepared.json();
   assert.equal(draft.canSave, true); assert.equal(writes.length, 0);

@@ -99,6 +99,8 @@ If Dictate Text does not capture speech reliably while Siri is active on your iO
 
 ## Notes
 
+- If authentication fails, read the returned `message` in Quick Look or Speak Text. It distinguishes a missing header, an incorrectly formatted Bearer value, embedded spaces/quotes, a token length mismatch, and a same-length wrong token. It never returns the token. If you want to bypass variable wiring while troubleshooting, paste the complete `Bearer YOUR_TOKEN` value directly into the Authorization header as plain text. Surrounding whitespace is ignored; internal whitespace is rejected.
+
 - Say one entry at a time. Missing or ambiguous details produce a spoken explanation and no saveable draft.
 - Drafts expire after ten minutes and are lost on server restarts. A repeated save request for the same draft returns the saved result within that period and running process. An uncertain save is never automatically retried.
 - Only the server-held draft is saved; changing fields in the save request cannot change the reviewed entry.
